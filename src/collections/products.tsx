@@ -45,34 +45,28 @@ export const productsCollection = buildCollection<Product>({
                 // 🚀 Upload file to ImageKit
                 uploadFunction: async (file: File) => {
                     try {
-                        // Step 1: Get ImageKit authentication from your API route
-                        const authRes = await fetch("/api/imagekit-auth");
-                        const authData = await authRes.json();
-
-                        // Step 2: Prepare form data for upload
                         const formData = new FormData();
                         formData.append("file", file);
-                        formData.append("publicKey", import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY!);
-                        formData.append("signature", authData.signature);
-                        formData.append("expire", authData.expire.toString());
-                        formData.append("token", authData.token);
-                        formData.append("folder", "/products");
+                        formData.append("fileName", file.name);
 
-                        // Step 3: Upload directly to ImageKit
-                        const uploadRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
-                            method: "POST",
-                            body: formData
-                        });
+                        const res = await fetch(
+                            "https://upload.imagekit.io/api/v1/files/upload?publicKey=" +
+                            import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY!,
+                            {
+                                method: "POST",
+                                body: formData,
+                            }
+                        );
 
-                        const data = await uploadRes.json();
-
-                        // Step 4: Return the uploaded image URL to FireCMS
+                        const data = await res.json();
+                        if (!data.url) throw new Error("Upload failed");
                         return data.url;
                     } catch (error) {
                         console.error("ImageKit upload failed:", error);
                         throw new Error("Upload failed. Please try again.");
                     }
                 }
+
             },
             description: "Upload an image of the product"
         }),
